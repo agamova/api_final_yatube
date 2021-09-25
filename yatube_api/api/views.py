@@ -1,16 +1,12 @@
 from rest_framework import filters, mixins, permissions, viewsets
 
 from rest_framework.pagination import LimitOffsetPagination
-from rest_framework.exceptions import ParseError
 from django.shortcuts import get_object_or_404
 
 from posts.models import Group, Post
 from .serializers import (CommentSerializer, GroupSerializer, FollowSerializer,
                           PostSerializer)
 from .permissions import IsAuthorOrReadOnlyPermission
-
-
-PARSE_ERR_MSG = 'Нельзя подписаться на самого себя!'
 
 
 class CreateListViewSet(
@@ -56,13 +52,11 @@ class PostViewSet(viewsets.ModelViewSet):
 class FollowViewSet(CreateListViewSet):
     serializer_class = FollowSerializer
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('following__username',)
+    search_fields = ('=following__username',)
 
     def get_queryset(self):
         new_queryset = self.request.user.follower.all()
         return new_queryset
 
     def perform_create(self, serializer):
-        if self.request.data['following'] == self.request.user.username:
-            raise ParseError(PARSE_ERR_MSG)
         serializer.save(user=self.request.user)
